@@ -603,6 +603,26 @@ const Style = () => {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: none; }
     }
+      
+    /* 1. 引入霞鹜文楷字体 */
+    @import url('https://unpkg.com/@lxgw/wenkai-webfont@1.3.0/style.css');
+    /* 2. 设置你喜欢的全局背景图 */
+    .wrapper {
+      background-image: url(https://s2.loli.net/2023/11/27/INF938OW2a5h4B7.jpg) !important;
+      background-position: center !important;
+      background-repeat: no-repeat !important;
+      background-size: cover !important; 
+      background-attachment: fixed !important; 
+    }
+    /* 3. 强制把 fuwari 主题原来的纯色背景变透明，让图片透出来 */
+    #theme-fuwari.fuwari-bg,
+    #theme-fuwari {
+      background: transparent !important;
+    }
+    /* 4. 全局替换为楷体 */
+    [id^="theme-"] {
+      font-family: 'LXGW WenKai', sans-serif !important;
+    }
   `}</style>
 }
 
