@@ -48,7 +48,7 @@ const CONFIG = {
   /** 是否渲染 Hero 区块（无图时仍占位，可按需关） */
   FUWARI_HERO_ENABLE: true,
   /** 自定义背景图 URL；留空则用 Notion 站点封面或 HOME_BANNER_IMAGE */
-  FUWARI_HERO_BG_IMAGE: '',
+  FUWARI_HERO_BG_IMAGE: 'https://s2.loli.net/2023/11/27/PdocmuTI3HShswv.jpg',
   /** 右下角署名文案；留空不显示 */
   FUWARI_HERO_CREDIT_TEXT: '',
   /** 署名链接 */
@@ -84,7 +84,7 @@ const CONFIG = {
   /** 默认品牌色相 0–360 */
   FUWARI_THEME_COLOR_HUE: 320,
   /** true：隐藏顶栏调色盘按钮，无法在站内改色相 */
-  FUWARI_THEME_COLOR_FIXED: false,
+  FUWARI_THEME_COLOR_FIXED: true,
   /** 文章页右侧浮动区：跳转评论区按钮 */
   FUWARI_WIDGET_TO_COMMENT: true,
   /** 文章页右侧浮动区：深色模式切换 */
