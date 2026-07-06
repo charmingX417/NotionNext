@@ -69,6 +69,10 @@ const CONFIG = {
   FUWARI_PROFILE_PATH: '/about',
   /** 联系/社群入口卡片 */
   FUWARI_WIDGET_CONTACT: true,
+  /** 正文右侧的新侧栏总开关 */
+  FUWARI_RIGHT_PANEL_ENABLE: true,
+  /** 正文右侧栏宽度（px） */
+  FUWARI_RIGHT_PANEL_WIDTH: 280,
   /** 侧栏广告位总开关 */
   FUWARI_WIDGET_AD: false,
   /** 侧栏广告位内：是否渲染 WWAds */
