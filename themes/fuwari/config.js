@@ -134,6 +134,15 @@ const CONFIG = {
    */
   FUWARI_MUSIC_ID: '8880284601',
   /**
+   * 单曲ID（优先于歌单，填写后只播放这一首歌，列表收起来）
+   * 获取方法：打开歌曲页面，URL 中的 song?id=xxx 就是单曲ID
+   */
+  FUWARI_MUSIC_SINGLE_ID: '2061995659',
+  /**
+   * 是否显示歌曲列表（歌单模式下有效）
+   */
+  FUWARI_MUSIC_SHOW_LIST: false,
+  /**
    * 自定义歌曲列表（当 FUWARI_MUSIC_ID 为空时使用）
    * 格式：
    * [

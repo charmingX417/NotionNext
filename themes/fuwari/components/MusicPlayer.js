@@ -6,6 +6,12 @@ import CONFIG from '../config'
 /**
  * 音乐播放器卡片
  * 使用 MetingJS + APlayer 解析网易云/QQ音乐等歌单
+ * 
+ * 配置（在 config.js 或 .env.local 中）：
+ * - FUWARI_MUSIC_SOURCE: 音乐平台 (netease/tencent/kugou/xiami/baidu)
+ * - FUWARI_MUSIC_ID: 歌单ID
+ * - FUWARI_MUSIC_SINGLE_ID: 单曲ID（优先于歌单）
+ * - FUWARI_MUSIC_SHOW_LIST: 是否显示歌曲列表 (true/false)
  */
 const MusicPlayer = () => {
   const [isReady, setIsReady] = useState(false)
@@ -55,10 +61,12 @@ const MusicPlayer = () => {
 
   const source = siteConfig('FUWARI_MUSIC_SOURCE', '', CONFIG)
   const playlistId = siteConfig('FUWARI_MUSIC_ID', '', CONFIG)
-  const audioList = siteConfig('FUWARI_MUSIC_LIST', [], CONFIG)
+  const singleId = siteConfig('FUWARI_MUSIC_SINGLE_ID', '', CONFIG)
+  const showList = siteConfig('FUWARI_MUSIC_SHOW_LIST', true, CONFIG)
 
+  // 单曲ID优先于歌单
+  const isSingleMode = !!singleId
   const hasPlaylist = source && playlistId
-  const hasAudioList = audioList && audioList.length > 0
 
   if (error) {
     return (
@@ -71,7 +79,7 @@ const MusicPlayer = () => {
     )
   }
 
-  if (!hasPlaylist && !hasAudioList) {
+  if (!hasPlaylist && !singleId) {
     return (
       <section className='fuwari-card p-5'>
         <h3 className='text-sm font-semibold mb-3 tracking-wide uppercase text-[var(--fuwari-muted)]'>
@@ -91,6 +99,10 @@ const MusicPlayer = () => {
   return (
     <>
       <style jsx global>{`
+        /* 播放器宽度撑满容器 */
+        .fuwari-meting-wrap .aplayer {
+          margin: 0 !important;
+        }
         /* 列表项横向排列：序号 | 歌名 - 歌手 */
         .fuwari-meting-wrap .aplayer-list ol > li {
           display: flex !important;
@@ -136,7 +148,21 @@ const MusicPlayer = () => {
         <div className='px-5 pb-4 fuwari-meting-wrap'>
           {!isReady ? (
             <div className='h-20 animate-pulse bg-[var(--fuwari-border)] rounded' />
+          ) : isSingleMode ? (
+            // 单曲模式
+            <meting-js
+              server={source || 'netease'}
+              type='song'
+              id={singleId}
+              mutex='true'
+              theme='#b373d8'
+              loop='all'
+              preload='auto'
+              volume='0.7'
+              list-folded='true'
+            />
           ) : (
+            // 歌单模式
             <meting-js
               server={source}
               type='playlist'
@@ -147,8 +173,8 @@ const MusicPlayer = () => {
               loop='all'
               preload='auto'
               volume='0.7'
-              list-folded='false'
-              list-max-height='250px'
+              list-folded={showList ? 'false' : 'true'}
+              list-max-height={showList ? '250px' : '0px'}
             />
           )}
         </div>
