@@ -64,7 +64,7 @@ const LayoutBase = props => {
       {showHomeHero && <HeroBanner siteInfo={props.siteInfo} />}
 
       <main
-        className={`max-w-6xl mx-auto px-3 md:px-4 pb-12 min-w-0 w-full ${showHomeHero ? 'fuwari-main-overlap' : ''}`}>
+        className={`max-w-7xl mx-auto px-3 md:px-4 pb-12 min-w-0 w-full ${showHomeHero ? 'fuwari-main-overlap' : ''}`}>
         <div className='grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_280px] gap-4 lg:gap-6 items-start min-w-0'>
           <div className='hidden lg:block sticky top-4'>
             <SidePanel {...props} />

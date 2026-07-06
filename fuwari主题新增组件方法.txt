@@ -1,0 +1,139 @@
+# Fuwari 主题新增组件方法
+
+## 基础步骤（三步走）
+
+### Step 1：在 `themes/fuwari/config.js` 中添加配置开关
+
+在 CONFIG 对象末尾添加配置项，可选加说明注释：
+
+```javascript
+// themes/fuwwari/config.js
+
+const CONFIG = {
+  // ... 现有配置 ...
+
+  /** 新侧栏总开关 */
+  FUWARI_RIGHT_PANEL_ENABLE: true,
+  /** 新侧栏宽度（px） */
+  FUWARI_RIGHT_PANEL_WIDTH: 280,
+}
+```
+
+> 配置读取优先级：NotionConfig表 > 环境变量 > config.js > 默认值
+> `siteConfig('KEY', 默认值, CONFIG)` 三段式调用，确保任意一层都能覆盖。
+
+---
+
+### Step 2：在 `themes/fuwari/components/` 下新建组件文件
+
+```javascript
+// themes/fuwari/components/RightPanel.js
+
+import { siteConfig } from '@/lib/config'
+import CONFIG from '../config'
+
+const RightPanel = props => {
+  // 开关控制，关闭时返回 null
+  if (!siteConfig('FUWARI_RIGHT_PANEL_ENABLE', true, CONFIG)) return null
+
+  return (
+    <aside className='space-y-4 hidden lg:block sticky top-4'>
+      <section className='fuwari-card p-5'>
+        <h3 className='text-sm font-semibold mb-2 tracking-wide uppercase text-[var(--fuwari-muted)]'>
+          Right Panel
+        </h3>
+        <p className='text-sm leading-6 text-[var(--fuwari-muted)]'>
+          占位内容
+        </p>
+      </section>
+    </aside>
+  )
+}
+
+export default RightPanel
+```
+
+> 样式类名说明：
+> - `fuwari-card`      → 白色卡片背景 + 圆角 + 阴影
+> - `hidden lg:block`  → 桌面端(lg≥1024px)显示，移动端隐藏
+> - `sticky top-4`     → 粘性定位，滚动时跟随
+> - `space-y-4`        → 子元素垂直间距，与 SidePanel 一致
+
+---
+
+### Step 3：在 `themes/fuwari/index.js` 中引入并渲染
+
+#### 3a. 顶部 import 区添加导入
+
+```javascript
+// themes/fuwari/index.js
+
+import RightPanel from './components/RightPanel'
+import SidePanel from './components/SidePanel'
+// import 其他现有组件...
+```
+
+#### 3b. 在 LayoutBase 的 Grid 中加入组件
+
+将原来的两列 Grid：
+```javascript
+<div className='grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 lg:gap-6 items-start min-w-0'>
+  <div className='hidden lg:block sticky top-4'>
+    <SidePanel {...props} />
+  </div>
+  <section className='min-w-0 w-full max-w-full'>
+    {children}
+  </section>
+</div>
+```
+
+改为三列 Grid（新增右栏）：
+```javascript
+<div className='grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_280px] gap-4 lg:gap-6 items-start min-w-0'>
+  <div className='hidden lg:block sticky top-4'>
+    <SidePanel {...props} />
+  </div>
+  <section className='min-w-0 w-full max-w-full'>
+    {children}
+  </section>
+  <RightPanel {...props} />
+</div>
+```
+
+> Grid 列宽说明：
+> - `280px`          → 左栏固定宽度
+> - `minmax(0,1fr)`  → 中间栏自适应填充
+> - `280px`          → 右栏固定宽度（如需灵活可通过 CSS 变量控制）
+>
+> 注意：`max-w-6xl`（1152px）容器宽度有限，三列布局在屏幕 ≥1280px 时效果最佳。
+> 如需更宽容器，可将 `<main>` 的 `max-w-6xl` 改为 `max-w-7xl` 或去掉 max-w 限制。
+
+---
+
+## 部署检查清单
+
+- [ ] 代码已 `git add` + `git commit` + `git push`
+- [ ] Vercel 触发新 deployment，时间戳在代码 push 之后
+- [ ] 访问 `*.vercel.app` 确认新功能出现
+- [ ] Vercel Dashboard → Settings → Custom Domains → 清除边缘缓存
+- [ ] 浏览器 Ctrl+Shift+R 硬刷新
+
+---
+
+## 常见问题
+
+**Q: 本地能显示，Vercel 不显示？**
+A: 检查 git push 是否成功，Vercel 是否拉到了最新 commit。打开浏览器 DevTools (F12) → Elements → 搜索组件关键字，确认 DOM 中是否包含该元素。
+
+**Q: 自定义域名没更新？**
+A: Vercel 边缘缓存导致。进入 Vercel Dashboard → Speed → Instant Cache → Clear Cache，再刷新。
+
+**Q: 屏幕宽度足够但右栏被挤到下一行？**
+A: `max-w-6xl` 限制了最大宽度。1280px 屏幕下三列 280+280+左右 padding 会超出限制，将 `max-w-6xl` 改为 `max-w-7xl` 或更大值。
+
+**Q: 想让组件只在特定页面显示？**
+A: 在 index.js 中用 `router.pathname` 判断，例如：
+```javascript
+const isArticlePage = router.pathname === '/[prefix]'
+// 然后 <RightPanel {...props} />
+```

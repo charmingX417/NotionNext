@@ -20,7 +20,7 @@ const HeroBanner = ({ siteInfo }) => {
       )}
       <div className='fuwari-hero-mask' />
       {siteConfig('FUWARI_HERO_CREDIT_TEXT', '', CONFIG) && (
-        <div className='max-w-6xl mx-auto px-4 relative z-[3]'>
+        <div className='max-w-7xl mx-auto px-4 relative z-[3]'>
           <SmartLink
             href={siteConfig('FUWARI_HERO_CREDIT_LINK', '#', CONFIG)}
             className='fuwari-hero-credit'

@@ -11,7 +11,7 @@ const Footer = () => {
 
   return (
     <footer className='fuwari-footer py-6 text-center text-sm text-[var(--fuwari-muted)]'>
-      <div className='max-w-6xl mx-auto px-4'>
+      <div className='max-w-7xl mx-auto px-4'>
         <p>
           <i className='far fa-copyright mr-1' />
           {copyrightDate} {author}. All Rights Reserved.
