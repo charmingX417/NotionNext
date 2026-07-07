@@ -126,11 +126,29 @@ const MusicPlayer = () => {
         .fuwari-meting-wrap .aplayer-list .aplayer-list-title {
           color: #ec4899 !important;
         }
+        .fuwari-meting-wrap .aplayer .aplayer-info .aplayer-name,
+        .fuwari-meting-wrap .aplayer .aplayer-info .aplayer-name * {
+          color: #ec4899 !important;
+        }
+        .fuwari-meting-wrap .aplayer .aplayer-info .aplayer-author {
+          color: #3b82f6 !important;
+        }
         .fuwari-meting-wrap .aplayer-list .aplayer-list-author {
           color: #3b82f6 !important;
         }
         .fuwari-meting-wrap .aplayer-list .aplayer-list-author::before {
           content: " - " !important;
+        }
+        /* 暗黑模式下歌名也显示粉色 */
+        .dark .fuwari-meting-wrap .aplayer .aplayer-info .aplayer-name,
+        .dark .fuwari-meting-wrap .aplayer-list .aplayer-list-title,
+        body.dark .fuwari-meting-wrap .aplayer .aplayer-info .aplayer-name {
+          color: #ec4899 !important;
+        }
+        /* 覆盖 APlayer 所有可能的歌名颜色 */
+        .fuwari-meting-wrap .aplayer [class*="name"],
+        .fuwari-meting-wrap .aplayer [class*="title"] {
+          color: #ec4899 !important;
         }
       `}</style>
       <section className='fuwari-card overflow-hidden'>
