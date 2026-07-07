@@ -1,0 +1,29 @@
+# Fuwari 主题背景图片功能
+
+## 修改文件
+
+`themes/fuwari/style.js`
+
+## 变更内容
+
+### 添加全站背景图片
+
+在 `.fuwari-bg` 类中添加了背景图片样式：
+
+```css
+background-image: url('图片URL');
+background-size: cover;
+background-position: center;
+background-attachment: fixed;
+background-color: var(--fuwari-bg);
+```
+
+### 移除渐变装饰层
+
+移除了原有的渐变叠加效果（`radial-gradient`），保留纯色背景色作为 fallback。
+
+## 使用方式
+
+1. 替换 `background-image` 的 URL 为实际图片地址
+2. 可根据需要调整 `background-attachment: fixed/scroll` 控制背景是否固定
+3. 深色图片可考虑恢复渐变层或添加内容区域半透明背景

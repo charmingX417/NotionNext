@@ -27,10 +27,11 @@ const Style = () => {
     }
 
     #theme-fuwari.fuwari-bg {
-      background:
-        radial-gradient(circle at 10% -10%, var(--fuwari-primary-soft) 0, transparent 45%),
-        radial-gradient(circle at 100% 10%, rgba(122, 199, 255, 0.14) 0, transparent 35%),
-        var(--fuwari-bg);
+      background-image: url('https://s2.loli.net/2023/11/27/PdocmuTI3HShswv.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-color: var(--fuwari-bg);
     }
 
     #theme-fuwari {
