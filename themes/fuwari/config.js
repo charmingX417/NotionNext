@@ -53,6 +53,13 @@ const CONFIG = {
   FUWARI_HERO_CREDIT_TEXT: '',
   /** 署名链接 */
   FUWARI_HERO_CREDIT_LINK: '',
+  /** 是否启用打字机效果 */
+  FUWARI_HERO_TYPEWRITER: true,
+  /** 打字机显示的文字数组，会依次轮播 */
+  FUWARI_HERO_TYPEWRITER_WORDS: 
+  ['莫叹去日不可留，来日犹可为',
+   '夜里有腐烂的梦，梦里有重复的人', 
+   '一生犹如罅穴，凿开是黢黑隧道；\n人生说来漫长，也无非两块面包。'],
 
   // ---------------------------------------------------------------------------
   // 侧栏（SidePanel）小部件

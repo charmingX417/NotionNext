@@ -1,6 +1,7 @@
 import SmartLink from '@/components/SmartLink'
 import { siteConfig } from '@/lib/config'
 import CONFIG from '../config'
+import TypeWriter from './TypeWriter'
 
 const HeroBanner = ({ siteInfo }) => {
   if (!siteConfig('FUWARI_HERO_ENABLE', true, CONFIG)) return null
@@ -9,6 +10,9 @@ const HeroBanner = ({ siteInfo }) => {
     siteInfo?.pageCover ||
     siteConfig('FUWARI_HERO_BG_IMAGE', '', CONFIG) ||
     siteConfig('HOME_BANNER_IMAGE')
+
+  const typewriterEnabled = siteConfig('FUWARI_HERO_TYPEWRITER', false, CONFIG)
+  const typewriterWords = siteConfig('FUWARI_HERO_TYPEWRITER_WORDS', ['Welcome to my blog'], CONFIG)
 
   return (
     <section className='fuwari-hero mb-4 overflow-hidden'>
@@ -19,6 +23,9 @@ const HeroBanner = ({ siteInfo }) => {
         />
       )}
       <div className='fuwari-hero-mask' />
+      <div className='fuwari-hero-content'>
+        {typewriterEnabled && <TypeWriter words={typewriterWords} />}
+      </div>
       {siteConfig('FUWARI_HERO_CREDIT_TEXT', '', CONFIG) && (
         <div className='max-w-7xl mx-auto px-4 relative z-[3]'>
           <SmartLink
@@ -35,4 +42,3 @@ const HeroBanner = ({ siteInfo }) => {
 }
 
 export default HeroBanner
-

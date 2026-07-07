@@ -1,29 +1,42 @@
-# Fuwari 主题背景图片功能
+# Fuwari 主题开发记录
 
 ## 修改文件
 
-`themes/fuwari/style.js`
+- `themes/fuwari/style.js`
+- `themes/fuwari/config.js`
+- `themes/fuwari/components/HeroBanner.js`（新增）
+- `themes/fuwari/components/TypeWriter.js`（新增）
 
-## 变更内容
+## 功能更新
 
-### 添加全站背景图片
+### 1. 全站背景图片
 
-在 `.fuwari-bg` 类中添加了背景图片样式：
+在 `.fuwari-bg` 类中添加了背景图片样式，移除了原有的渐变叠加效果。
 
-```css
-background-image: url('图片URL');
-background-size: cover;
-background-position: center;
-background-attachment: fixed;
-background-color: var(--fuwari-bg);
+### 2. Hero 横幅打字机效果
+
+新增打字机动画欢迎语，显示在 Hero 横幅区居中位置。
+
+**配置项**（在 `config.js` 中）：
+- `FUWARI_HERO_TYPEWRITER: true` - 开启/关闭
+- `FUWARI_HERO_TYPEWRITER_WORDS` - 文字数组，会依次轮播
+
+```js
+FUWARI_HERO_TYPEWRITER_WORDS: ['Welcome to my blog', '探索无限可能', '记录生活点滴']
 ```
-
-### 移除渐变装饰层
-
-移除了原有的渐变叠加效果（`radial-gradient`），保留纯色背景色作为 fallback。
 
 ## 使用方式
 
-1. 替换 `background-image` 的 URL 为实际图片地址
-2. 可根据需要调整 `background-attachment: fixed/scroll` 控制背景是否固定
-3. 深色图片可考虑恢复渐变层或添加内容区域半透明背景
+### 背景图片
+1. 替换 `style.js` 中 `background-image` 的 URL
+2. 调整 `background-attachment: fixed/scroll` 控制是否固定
+
+### 打字机效果
+1. 在 `config.js` 中修改 `FUWARI_HERO_TYPEWRITER_WORDS` 数组
+2. 支持中英文混合
+
+## 注意事项
+
+- `.env.local` 文件不在 git 追踪范围内（已在 `.gitignore` 中排除）
+- 本地开发时，Next.js 自动加载 `.env.local` 中的环境变量
+- **重要**：如果在本地开发过程中新增了环境变量（如新的 API Key），需要同步配置到 Vercel Dashboard → Settings → Environment Variables

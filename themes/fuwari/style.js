@@ -212,6 +212,32 @@ const Style = () => {
     #theme-fuwari .fuwari-hero-content {
       padding-top: clamp(3.5rem, 10vh, 7rem);
       padding-bottom: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      position: relative;
+      z-index: 2;
+    }
+    #theme-fuwari .fuwari-typewriter {
+      font-size: clamp(1.25rem, 3vw, 2rem);
+      font-weight: 600;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      letter-spacing: 0.05em;
+      white-space: pre-wrap;
+      text-align: center;
+      max-width: 90%;
+    }
+    #theme-fuwari .fuwari-typewriter-cursor {
+      display: inline-block;
+      margin-left: 2px;
+      animation: fuwari-blink 1s infinite;
+      color: #fff;
+    }
+    @keyframes fuwari-blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
     }
     @media (max-width: 768px) {
       #theme-fuwari .fuwari-hero {
