@@ -20,6 +20,23 @@ const MODEL_OFFSET = {
   y: 0.15    // 垂直：0 = 居中；0.2 = 中心移到 70% 高度处（偏下）；-0.2 = 偏上
 }
 
+// 个性化动作触发配置
+// 初次打开 / 重新回到 / 待机超时 都从对应动作池里随机抽一个
+// 点击其他区域：从待机 + 回到 + touch_body 池中随机抽一个
+const MOTION_RULES = {
+  onFirstLoad: ['login', 'home'],                           // 首次打开
+  onReturn: ['complete', 'mail', 'mission'],                // 重新回到页面
+  idleTimeoutMs: 60 * 1000,                                 // 待机 60 秒后播放动作
+  idleMotions: ['mail', 'main_1', 'main_2', 'main_3'],      // 待机动作池
+  // 点击身体/空白处：待机 + 回到 + touch_body（共 7 个）
+  onBodyClickMotions: [
+    'mail', 'main_1', 'main_2', 'main_3',
+    'complete', 'mission', 'touch_body'
+  ],
+  // 点击特殊区域（Special）：统一播放 wedding
+  touchSpecialMotion: 'touch_special'
+}
+
 const Live2DWidget = () => {
   const containerRef = useRef(null)
   const canvasContainerRef = useRef(null)
@@ -40,6 +57,33 @@ const Live2DWidget = () => {
   const [visible, setVisible] = useState(true)
   const [panelOpen, setPanelOpen] = useState(false)
   const [motions, setMotions] = useState([])
+  const idleTimerRef = useRef(null)             // 待机超时计时器
+  const hasTriggeredFirstLoadRef = useRef(false) // 防止重复触发首次加载动作
+  const lastInteractionRef = useRef(Date.now())  // 最近一次交互时间（用于待机判断）
+
+  const playFromPool = (pool) => {
+    const viewer = stateRef.current.viewer
+    if (!viewer || !viewer.model || !Array.isArray(pool) || pool.length === 0) return
+    // 过滤出模型实际加载了的动作名
+    const available = pool.filter((name) => viewer.model.motions && viewer.model.motions.get(name))
+    if (available.length === 0) return
+    const picked = available[Math.floor(Math.random() * available.length)]
+    viewer.startAnimation(picked, 'base')
+    lastInteractionRef.current = Date.now()
+  }
+
+  const resetIdleTimer = () => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    lastInteractionRef.current = Date.now()
+    idleTimerRef.current = setTimeout(() => {
+      // 待机超时：只在动画没在播放时触发，避免打断
+      const viewer = stateRef.current.viewer
+      if (viewer && viewer.model && !viewer.model.animator.isPlaying) {
+        playFromPool(MOTION_RULES.idleMotions)
+      }
+      resetIdleTimer()
+    }, MOTION_RULES.idleTimeoutMs)
+  }
 
   useEffect(() => {
     const enabled = siteConfig('FUWARI_LIVE2D_ENABLE', false, CONFIG)
@@ -62,7 +106,20 @@ const Live2DWidget = () => {
       // 占位：保持监听以观察滚动行为，不改变 visible
     }
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+
+    // 回到页面时播放对应动作（离开时不播，用户看不见）
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        playFromPool(MOTION_RULES.onReturn)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    }
   }, [])
 
   const initLive2D = async () => {
@@ -403,12 +460,16 @@ const Live2DWidget = () => {
             if (self.isHit('TouchHead', e.offsetX, e.offsetY)) {
               self.startAnimation('touch_head', 'base')
             } else if (self.isHit('TouchSpecial', e.offsetX, e.offsetY)) {
-              self.startAnimation('touch_special', 'base')
+              // 点击 Special 区域：统一播放 wedding
+              self.startAnimation(MOTION_RULES.touchSpecialMotion, 'base')
             } else {
-              // 从模型已加载的全部 motions 中随机选一个播放
-              const allMotions = []
-              self.model.motions.forEach(function (v, k) { allMotions.push(k) })
-              const picked = allMotions[Math.floor(Math.random() * allMotions.length)]
+              // 点击身体/其他区域：从待机 + 回到 + touch_body 池中随机
+              const pool = MOTION_RULES.onBodyClickMotions
+              const available = pool.filter(
+                (name) => self.model.motions && self.model.motions.get(name)
+              )
+              if (available.length === 0) return
+              const picked = available[Math.floor(Math.random() * available.length)]
               self.startAnimation(picked, 'base')
             }
           }
@@ -460,6 +521,18 @@ const Live2DWidget = () => {
         }
         setMotions(motionKeys)
         console.log('[Live2D][changeCanvas] motions', motionKeys)
+
+        // 首次加载完成后触发个性化动作
+        if (!hasTriggeredFirstLoadRef.current) {
+          hasTriggeredFirstLoadRef.current = true
+          // 略微延迟启动，给 idle 一帧时间
+          setTimeout(() => {
+            playFromPool(MOTION_RULES.onFirstLoad)
+            resetIdleTimer()
+          }, 300)
+        } else {
+          resetIdleTimer()
+        }
 
         if (this.onResize) this.onResize()
       }

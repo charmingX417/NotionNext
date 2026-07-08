@@ -123,3 +123,36 @@ wedding, mission, mail
 ```
 
 如果需要自定义动作分组（如点击头部只播放情感类动画），可修改 `mouseup` 中的逻辑。
+
+### 个性化动作触发
+
+通过文件顶部的 `MOTION_RULES` 对象配置，无需改动逻辑代码：
+
+```javascript
+const MOTION_RULES = {
+  onFirstLoad: ['login', 'home'],                           // 初次打开
+  onReturn: ['complete', 'mail', 'mission'],                // 重新回到网页
+  idleTimeoutMs: 60 * 1000,                                 // 待机超时（60 秒）
+  idleMotions: ['mail', 'main_1', 'main_2', 'main_3'],      // 待机动作池
+  onBodyClickMotions: [                                     // 点击身体/空白处
+    'mail', 'main_1', 'main_2', 'main_3',
+    'complete', 'mission', 'touch_body'
+  ],
+  touchSpecialMotion: 'wedding'                             // 点击 Special 区域
+}
+```
+
+**说明：**
+
+- **离开网页不触发**（用户在切走页签后看不见）
+- **点击 Special 区域**：固定播放 `wedding`，不再是随机
+- **点击身体/空白处**：从 `idleMotions` + `onReturn` + `touch_body` 共 7 个动作中随机抽取
+- **动作池过滤**：`onBodyClickMotions` 在选择时用 `model.motions.get(name)` 过滤掉模型未加载的动作
+
+实现机制：
+
+- **首次加载**：`changeCanvas` 内通过 `hasTriggeredFirstLoadRef` 标记，仅触发一次，延迟 300ms 让 idle 先播放一帧
+- **回到网页**：`document.visibilitychange` 监听，仅在 `!document.hidden` 时触发
+- **待机超时**：`setTimeout` 循环调度，触发前检查 `!animator.isPlaying` 避免打断其他动画
+
+可扩展动作：基于现有钩子可继续添加（如按时间段、滚动到特定位置、点击空白区域等触发不同动作）。
