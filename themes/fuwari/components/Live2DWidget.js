@@ -15,7 +15,7 @@ const ONLY_MODEL_NAME = 'Laffey (New Year Rabbit)'
 const MODEL_CONFIG = {
   zoom: 1.0, 
   offsetX: 0, 
-  offsetY: 0.1  
+  offsetY: 0  
 }
 
 // 个性化动作触发配置
@@ -632,7 +632,7 @@ const Live2DWidget = () => {
       <style jsx global>{`
         #theme-fuwari .l2d-widget-root {
           right: var(--l2d-right, 1rem);
-          bottom: var(--l2d-bottom, 1rem);
+          bottom: var(--l2d-bottom, 0rem);
           /* 取消了硬编码的宽高度，完全由 JS 计算出的变量驱动 */
           width: var(--l2d-w);
           height: var(--l2d-h);
