@@ -6,34 +6,28 @@ import { isBrowser } from '@/lib/utils'
 import CONFIG from '../config'
 
 const CDN_BASE = '/live2d-master/live2d_3'
-// PIXI Loader baseUrl：模型资源所在的相对根目录，物理路径为
-// e:\NotionNext\public\live2d-master\live2d_3\model\<作者>\<角色>\...
 const MODEL_BASE = `${CDN_BASE}/model`
 
 const ONLY_MODEL = 'Azue Lane(JP)/lafei_4'
 const ONLY_MODEL_NAME = 'Laffey (New Year Rabbit)'
 
-// 模型位置偏移比例（相对容器宽高）。
-// 0 = 居中；正值：X 偏右 / Y 偏下；负值：X 偏左 / Y 偏上
-const MODEL_OFFSET = {
-  x: 0.3, // 水平：0 = 居中；0.2 = 中心移到 70% 宽度处；-0.2 = 偏左
-  y: 0.15    // 垂直：0 = 居中；0.2 = 中心移到 70% 高度处（偏下）；-0.2 = 偏上
+// 模型展示配置（用户主动配置，不属于模型缺失数据的后备）
+const MODEL_CONFIG = {
+  zoom: 1.0, 
+  offsetX: 0, 
+  offsetY: 0.1  
 }
 
 // 个性化动作触发配置
-// 初次打开 / 重新回到 / 待机超时 都从对应动作池里随机抽一个
-// 点击其他区域：从待机 + 回到 + touch_body 池中随机抽一个
 const MOTION_RULES = {
-  onFirstLoad: ['login', 'home'],                           // 首次打开
-  onReturn: ['complete', 'mail', 'mission'],                // 重新回到页面
-  idleTimeoutMs: 60 * 1000,                                 // 待机 60 秒后播放动作
-  idleMotions: ['mail', 'main_1', 'main_2', 'main_3'],      // 待机动作池
-  // 点击身体/空白处：待机 + 回到 + touch_body（共 7 个）
+  onFirstLoad: ['login', 'home'],                           
+  onReturn: ['complete', 'mail', 'mission'],                
+  idleTimeoutMs: 60 * 1000,                                 
+  idleMotions: ['mail', 'main_1', 'main_2', 'main_3'],      
   onBodyClickMotions: [
     'mail', 'main_1', 'main_2', 'main_3',
     'complete', 'mission', 'touch_body'
   ],
-  // 点击特殊区域（Special）：统一播放 wedding
   touchSpecialMotion: 'touch_special'
 }
 
@@ -57,14 +51,13 @@ const Live2DWidget = () => {
   const [visible, setVisible] = useState(true)
   const [panelOpen, setPanelOpen] = useState(false)
   const [motions, setMotions] = useState([])
-  const idleTimerRef = useRef(null)             // 待机超时计时器
-  const hasTriggeredFirstLoadRef = useRef(false) // 防止重复触发首次加载动作
-  const lastInteractionRef = useRef(Date.now())  // 最近一次交互时间（用于待机判断）
+  const idleTimerRef = useRef(null)             
+  const hasTriggeredFirstLoadRef = useRef(false) 
+  const lastInteractionRef = useRef(Date.now())  
 
   const playFromPool = (pool) => {
     const viewer = stateRef.current.viewer
     if (!viewer || !viewer.model || !Array.isArray(pool) || pool.length === 0) return
-    // 过滤出模型实际加载了的动作名
     const available = pool.filter((name) => viewer.model.motions && viewer.model.motions.get(name))
     if (available.length === 0) return
     const picked = available[Math.floor(Math.random() * available.length)]
@@ -76,7 +69,6 @@ const Live2DWidget = () => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
     lastInteractionRef.current = Date.now()
     idleTimerRef.current = setTimeout(() => {
-      // 待机超时：只在动画没在播放时触发，避免打断
       const viewer = stateRef.current.viewer
       if (viewer && viewer.model && !viewer.model.animator.isPlaying) {
         playFromPool(MOTION_RULES.idleMotions)
@@ -87,27 +79,13 @@ const Live2DWidget = () => {
 
   useEffect(() => {
     const enabled = siteConfig('FUWARI_LIVE2D_ENABLE', false, CONFIG)
-    console.log('[Live2D][mount] component mounted', {
-      enabled,
-      scrollY: typeof window !== 'undefined' ? window.scrollY : null,
-      hasRightFloatArea: typeof document !== 'undefined'
-        ? !!document.querySelector('[data-l2d-host]')
-        : false
-    })
     if (!enabled) return
 
-    // 页面进入即开始加载脚本与模型（无需点击）
     loadScriptsAndInit()
 
-    // 保留滚动事件，便于未来做「滚到底自动收起」之类扩展
-    const onScroll = () => {
-      // eslint-disable-next-line no-unused-vars
-      const _v = window.scrollY
-      // 占位：保持监听以观察滚动行为，不改变 visible
-    }
+    const onScroll = () => {}
     window.addEventListener('scroll', onScroll, { passive: true })
 
-    // 回到页面时播放对应动作（离开时不播，用户看不见）
     const onVisibilityChange = () => {
       if (!document.hidden) {
         playFromPool(MOTION_RULES.onReturn)
@@ -123,12 +101,6 @@ const Live2DWidget = () => {
   }, [])
 
   const initLive2D = async () => {
-    console.log('[Live2D][init] start', {
-      isBrowser,
-      alreadyInitialized: stateRef.current.initialized,
-      hasContainer: !!canvasContainerRef.current,
-      model: ONLY_MODEL
-    })
     if (!isBrowser || stateRef.current.initialized) return
     stateRef.current.initialized = true
 
@@ -136,19 +108,9 @@ const Live2DWidget = () => {
     const viewer = createViewerClass(L2D)
     stateRef.current.viewer = viewer
     stateRef.current.l2d = viewer.l2d
-    console.log('[Live2D][init] viewer created', {
-      hasL2DClass: !!L2D,
-      hasViewer: !!viewer,
-      hasL2D: !!viewer.l2d,
-      hasPIXI: !!(window.PIXI),
-      hasFramework: !!window.LIVE2DCUBISMFRAMEWORK,
-      hasCubismPixi: !!window.LIVE2DCUBISMPIXI,
-      hasCore: !!window.Live2DCubismCore
-    })
 
     try {
       await viewer.init(canvasContainerRef.current, ONLY_MODEL)
-      console.log('[Live2D][init] viewer.init resolved')
     } catch (e) {
       console.error('[Live2D] Init failed:', e)
     }
@@ -156,14 +118,8 @@ const Live2DWidget = () => {
 
   const createL2DClass = () => {
     const { PIXI } = window
-    if (!PIXI) {
-      console.error('[Live2D][loader] window.PIXI is missing')
-      return null
-    }
-    if (!window.LIVE2DCUBISMFRAMEWORK) {
-      console.error('[Live2D][loader] window.LIVE2DCUBISMFRAMEWORK is missing')
-      return null
-    }
+    if (!PIXI) return null
+    if (!window.LIVE2DCUBISMFRAMEWORK) return null
 
     class L2DLoader {
       constructor(basePath) {
@@ -185,7 +141,6 @@ const Live2DWidget = () => {
 
       load(name, viewerRef) {
         const self = this
-        console.log('[Live2D][loader.load] request', { name, cached: !!this.models[name] })
         if (this.models[name]) {
           viewerRef.changeCanvas(this.models[name])
           return
@@ -194,37 +149,14 @@ const Live2DWidget = () => {
         let modelDir = name + '/'
         let shortName = name.split('/').pop()
         let modelPath = shortName + '.model3.json'
-        const url = `${this.loader.baseUrl}${modelDir}${modelPath}`
-        console.log('[Live2D][loader.load] fetch model3.json', { url })
-
+        
         this.loader.add(shortName + '_model', modelDir + modelPath, {
           xhrType: PIXI.loaders.Resource.XHR_RESPONSE_TYPE.JSON
         })
 
-        this.loader.onError.add((err) => {
-          console.error('[Live2D][loader.load] PIXI loader error', err)
-        })
-
         this.loader.load(function (loader, resources) {
-          console.log('[Live2D][loader.load] model3.json loaded', {
-            name,
-            hasResource: !!resources[shortName + '_model'],
-            url
-          })
           let model3Obj = resources[shortName + '_model'].data
-          if (!model3Obj) {
-            console.error('[Live2D][loader.load] model3Obj is null', { url })
-            return
-          }
-          console.log('[Live2D][loader.load] model3Obj keys', {
-            hasFileReferences: !!model3Obj.FileReferences,
-            moc: model3Obj.FileReferences?.Moc,
-            textures: model3Obj.FileReferences?.Textures?.length || 0,
-            physics: model3Obj.FileReferences?.Physics,
-            motionGroups: model3Obj.FileReferences?.Motions
-              ? Object.keys(model3Obj.FileReferences.Motions)
-              : []
-          })
+          if (!model3Obj) return
 
           if (model3Obj.FileReferences && model3Obj.FileReferences.Moc) {
             loader.add(shortName + '_moc', modelDir + model3Obj.FileReferences.Moc, {
@@ -308,13 +240,6 @@ const Live2DWidget = () => {
             let model = window.LIVE2DCUBISMPIXI.Model._create(coreModel, textures, animator, physicsRig, null, groups)
             model.motions = motionsMap
             self.models[name] = model
-            console.log('[Live2D][loader.load] model ready', {
-              name,
-              textures: textures.length,
-              motions: motionNames.length,
-              hasPhysics: !!physicsRig,
-              hasGroups: !!groups
-            })
             viewerRef.changeCanvas(model)
           })
         })
@@ -332,7 +257,6 @@ const Live2DWidget = () => {
         try {
           this.l2d = new L2DClass(`${MODEL_BASE}`)
         } catch (e) {
-          console.error('[Live2D][Viewer.constructor] L2DClass instantiation failed', e)
           this.l2d = null
         }
         this.model = null
@@ -341,42 +265,105 @@ const Live2DWidget = () => {
         this.isClick = false
       }
 
-      // Live2D Cubism 模型画布像素是 2048×2048 左右，
-      // 容器实际只有 160×90，需要把 canvas 调整到容器尺寸，
-      // 并按容器的"高度"反算模型 scale，使模型铺满容器。
-      // 模型 Canvas 内部坐标是 (modelCanvasSize × modelCanvasSize)。
-      calculateScale(containerWidth, containerHeight, model) {
-        // PIXI 模型对象的 width/height 通常是模型原始画布尺寸（2048 或 1024 等）
-        const modelW = model?.width || 2048
-        const modelH = model?.height || 2048
-        const fit = Math.min(containerWidth / modelW, containerHeight / modelH)
-        return Math.max(fit, 0.0001) * 0.9
+      // ★ 严格模式：拒绝任何默认值，如果获取不到尺寸直接抛出致命错误
+      getNativeSize() {
+        if (this._cachedNativeSize) {
+          return this._cachedNativeSize
+        }
+
+        const coreModel = this.model?._coreModel
+        if (!coreModel || !coreModel.canvasinfo) {
+          throw new Error('[Live2D] 致命错误：无法获取 coreModel 或 canvasinfo，模型可能损坏或与当前 SDK 不兼容。')
+        }
+
+        const info = coreModel.canvasinfo
+        const width = info.CanvasWidth
+        const height = info.CanvasHeight
+        const originX = info.CanvasOriginX
+        const originY = info.CanvasOriginY
+        const ppu = info.PixelsPerUnit
+
+        // 逐项进行严格校验
+        if (typeof width !== 'number' || width <= 0) throw new Error('[Live2D] 致命错误：读取到无效的 CanvasWidth')
+        if (typeof height !== 'number' || height <= 0) throw new Error('[Live2D] 致命错误：读取到无效的 CanvasHeight')
+        if (typeof originX !== 'number') throw new Error('[Live2D] 致命错误：读取到无效的 CanvasOriginX')
+        if (typeof originY !== 'number') throw new Error('[Live2D] 致命错误：读取到无效的 CanvasOriginY')
+        if (typeof ppu !== 'number' || ppu <= 0) throw new Error('[Live2D] 致命错误：缺少关键属性 PixelsPerUnit (PPU) 或数值异常')
+
+        const size = { width, height, originX, originY, ppu }
+        
+        console.log('[Live2D][Size] 已严格校验并获取到逻辑画布参数:', size)
+        this._cachedNativeSize = size
+        return size
+      }
+
+      // ★ 严格模式：拒绝默认容器尺寸，要求 DOM 必须通过 CSS 提供确切高度
+      syncRendererSize(nativeSize) {
+        if (!this.container) {
+          throw new Error('[Live2D] 致命错误：DOM 容器未挂载！')
+        }
+
+        const targetHeight = this.container.clientHeight
+        if (!targetHeight || targetHeight <= 0) {
+          throw new Error('[Live2D] 致命错误：容器的 clientHeight 为 0。请检查 CSS，必须为 .l2d-canvas-wrap 赋予有效的高度！')
+        }
+
+        // 以高度为基准，严格遵循模型的宽高比例算出物理宽度
+        const aspectRatio = nativeSize.width / nativeSize.height
+        const targetWidth = Math.round(targetHeight * aspectRatio)
+
+        // 反向写入 CSS
+        if (this.container.closest('.l2d-widget-root')) {
+          const rootNode = this.container.closest('.l2d-widget-root')
+          rootNode.style.setProperty('--l2d-w', `${targetWidth}px`)
+          rootNode.style.setProperty('--l2d-h', `${targetHeight}px`)
+        }
+
+        const containerW = targetWidth
+        const containerH = targetHeight
+        this.app.renderer.resize(containerW, containerH)
+        this.app.view.style.width = '100%'
+        this.app.view.style.height = '100%'
+
+        // 计算带 PPU 的最终物理矩阵
+        const baseScale = containerH / nativeSize.height
+        const finalScale = baseScale * nativeSize.ppu * MODEL_CONFIG.zoom
+        
+        // 注意：如果拉菲出现倒立现象，请将下方代码改为 new PIXI.Point(finalScale, -finalScale)
+        this.model.scale = new PIXI.Point(finalScale, finalScale)
+
+        // 完美居中逻辑
+        const centerX = containerW / 2
+        const centerY = containerH / 2
+
+        const posX = centerX + (containerW * MODEL_CONFIG.offsetX)
+        const posY = centerY + (containerH * MODEL_CONFIG.offsetY)
+
+        this.model.position = new PIXI.Point(posX, posY)
+
+        if (this.model.masks) {
+          this.model.masks.resize(containerW, containerH)
+        }
+
+        console.log('[Live2D][Size] 渲染对齐完成:', {
+          容器尺寸: `${containerW}x${containerH}`,
+          矩阵缩放: finalScale,
+          坐标位置: `${posX}, ${posY}`
+        })
       }
 
       init(container, modelName) {
         return new Promise((resolve) => {
           const { PIXI } = window
           this.container = container
-          const rect = container.getBoundingClientRect()
-          const width = rect.width || 160
-          const height = rect.height || 90
-          console.log('[Live2D][viewer.init] called', {
-            modelName,
-            hasContainer: !!container,
-            containerTagName: container?.tagName,
-            childCount: container?.childNodes?.length,
-            containerW: width,
-            containerH: height
-          })
+          // 初始随意值，加载完模型后会由 syncRendererSize 严格接管并覆盖
+          const width = 160
+          const height = 90
 
           this.app = new PIXI.Application(width, height, {
             backgroundColor: 0x000000,
             transparent: true,
             autoDensity: true
-          })
-          console.log('[Live2D][viewer.init] PIXI.Application created', {
-            viewWidth: this.app.view.width,
-            viewHeight: this.app.view.height
           })
 
           this.app.view.style.width = '100%'
@@ -385,9 +372,6 @@ const Live2DWidget = () => {
 
           container.innerHTML = ''
           container.appendChild(this.app.view)
-          console.log('[Live2D][viewer.init] canvas mounted', {
-            containerRect: container.getBoundingClientRect()
-          })
 
           this.app.ticker.add((delta) => {
             if (!this.model) return
@@ -400,32 +384,9 @@ const Live2DWidget = () => {
           this.setupEvents(container)
           this.l2d.load(modelName, this)
 
-          // 用 ResizeObserver 监听容器尺寸变化，实时更新 canvas 分辨率与模型位置
-          this.resizeObserver = new ResizeObserver((entries) => {
-            const entry = entries[0]
-            if (!entry || !this.model) return
-            const { width, height } = entry.contentRect
-            if (width === 0 || height === 0) return
-            this.app.view.style.width = width + 'px'
-            this.app.view.style.height = height + 'px'
-            this.app.renderer.resize(width, height)
-            // 位置：相对容器中心，按 MODEL_OFFSET.x / MODEL_OFFSET.y 偏移
-            this.model.position = new PIXI.Point(
-              width * (0.5 + MODEL_OFFSET.x),
-              height * (0.5 + MODEL_OFFSET.y)
-            )
-            const scale = this.calculateScale(width, height, this.model)
-            this.model.scale = new PIXI.Point(scale, scale)
-            if (this.model.masks) {
-              this.model.masks.resize(width, height)
-            }
-          })
-          this.resizeObserver.observe(container)
-
           const checkModel = setInterval(() => {
             if (this.model) {
               clearInterval(checkModel)
-              console.log('[Live2D][init] model attached, resolving init promise')
               resolve()
             }
           }, 200)
@@ -447,30 +408,36 @@ const Live2DWidget = () => {
             }
           }
           if (self.model) {
-            let mouseX = self.model.position.x - e.offsetX
-            let mouseY = self.model.position.y - e.offsetY
-            self.model.pointerX = -mouseX / self.app.view.height
-            self.model.pointerY = -mouseY / self.app.view.width
+            const renderW = self.app.renderer.width
+            const renderH = self.app.renderer.height
+            
+            const mouseX = e.offsetX - self.model.position.x
+            const mouseY = e.offsetY - self.model.position.y
+            
+            self.model.pointerX = mouseX / (renderW * 0.5)
+            self.model.pointerY = -mouseY / (renderH * 0.5)
           }
         })
 
         canvas.addEventListener('mouseup', function (e) {
           if (!self.model) return
           if (self.isClick) {
-            if (self.isHit('TouchHead', e.offsetX, e.offsetY)) {
+            const hitX = e.offsetX
+            const hitY = e.offsetY
+
+            if (self.isHit('TouchHead', hitX, hitY)) {
               self.startAnimation('touch_head', 'base')
-            } else if (self.isHit('TouchSpecial', e.offsetX, e.offsetY)) {
-              // 点击 Special 区域：统一播放 wedding
+            } else if (self.isHit('TouchSpecial', hitX, hitY)) {
               self.startAnimation(MOTION_RULES.touchSpecialMotion, 'base')
             } else {
-              // 点击身体/其他区域：从待机 + 回到 + touch_body 池中随机
               const pool = MOTION_RULES.onBodyClickMotions
               const available = pool.filter(
                 (name) => self.model.motions && self.model.motions.get(name)
               )
-              if (available.length === 0) return
-              const picked = available[Math.floor(Math.random() * available.length)]
-              self.startAnimation(picked, 'base')
+              if (available.length > 0) {
+                const picked = available[Math.floor(Math.random() * available.length)]
+                self.startAnimation(picked, 'base')
+              }
             }
           }
           self.isClick = false
@@ -480,10 +447,6 @@ const Live2DWidget = () => {
 
       changeCanvas(model) {
         const { PIXI } = window
-        console.log('[Live2D][changeCanvas]', {
-          hasModel: !!model,
-          hasApp: !!this.app
-        })
         this.app.stage.removeChildren()
 
         this.model = model
@@ -497,21 +460,18 @@ const Live2DWidget = () => {
           this.app.stage.addChild(this.model.masks)
         }
 
-        const rect = this.container
-          ? this.container.getBoundingClientRect()
-          : { width: 0, height: 0 }
-        this.model.position = new PIXI.Point(
-          rect.width * (0.5 + MODEL_OFFSET.x),
-          rect.height * (0.5 + MODEL_OFFSET.y)
-        )
-        const scale = this.calculateScale(rect.width, rect.height, this.model)
-        this.model.scale = new PIXI.Point(scale, scale)
-        console.log('[Live2D][changeCanvas] model placed', {
-          x: this.model.position.x,
-          y: this.model.position.y,
-          scale,
-          container: { w: rect.width, h: rect.height }
-        })
+        this._cachedNativeSize = null 
+
+        // ★ 引入 Try-Catch，一旦数据不合法，直接中止渲染并抛出错误日志
+        try {
+          const nativeSize = this.getNativeSize()
+          this.syncRendererSize(nativeSize)
+        } catch (error) {
+          console.error(error.message)
+          // 若校验失败，移除破损的模型以防页面污染
+          this.app.stage.removeChildren()
+          return 
+        }
 
         const motionKeys = []
         if (this.model.motions) {
@@ -520,12 +480,9 @@ const Live2DWidget = () => {
           })
         }
         setMotions(motionKeys)
-        console.log('[Live2D][changeCanvas] motions', motionKeys)
 
-        // 首次加载完成后触发个性化动作
         if (!hasTriggeredFirstLoadRef.current) {
           hasTriggeredFirstLoadRef.current = true
-          // 略微延迟启动，给 idle 一帧时间
           setTimeout(() => {
             playFromPool(MOTION_RULES.onFirstLoad)
             resetIdleTimer()
@@ -629,22 +586,18 @@ const Live2DWidget = () => {
   }
 
   const loadScriptsAndInit = async () => {
-    console.log('[Live2D][scripts] start loading', { base: CDN_BASE })
     const load = (src) =>
       new Promise((resolve, reject) => {
         if (document.querySelector(`script[src="${src}"]`)) {
-          console.log('[Live2D][scripts] already present, skip', src)
           resolve()
           return
         }
         const s = document.createElement('script')
         s.src = src
         s.onload = () => {
-          console.log('[Live2D][scripts] loaded', src)
           resolve()
         }
         s.onerror = (e) => {
-          console.error('[Live2D][scripts] failed', src, e)
           reject(e)
         }
         document.head.appendChild(s)
@@ -656,13 +609,6 @@ const Live2DWidget = () => {
       await load(`${CDN_BASE}/js/live2dcubismcore.min.js`)
       await load(`${CDN_BASE}/js/live2dcubismframework.js`)
       await load(`${CDN_BASE}/js/live2dcubismpixi.js`)
-      console.log('[Live2D][scripts] all loaded', {
-        jQuery: typeof window.jQuery,
-        PIXI: typeof window.PIXI,
-        LIVE2DCUBISMFRAMEWORK: typeof window.LIVE2DCUBISMFRAMEWORK,
-        LIVE2DCUBISMPIXI: typeof window.LIVE2DCUBISMPIXI,
-        Live2DCubismCore: typeof window.Live2DCubismCore
-      })
       await initLive2D()
     } catch (e) {
       console.error('[Live2D] Script load failed:', e)
@@ -670,16 +616,6 @@ const Live2DWidget = () => {
   }
 
   const handleToggle = () => {
-    //关闭点击模型弹出选项面板
-    // console.log('[Live2D][toggle] click', {
-    //   initialized: stateRef.current.initialized,
-    //   panelOpen,
-    //   hasContainer: !!canvasContainerRef.current
-    // })
-    // if (!stateRef.current.initialized) {
-    //   loadScriptsAndInit()
-    // }
-    // setPanelOpen(!panelOpen)
   }
 
   const handleMotion = (motionId) => {
@@ -689,9 +625,6 @@ const Live2DWidget = () => {
   }
 
   if (!siteConfig('FUWARI_LIVE2D_ENABLE', false, CONFIG)) {
-    if (typeof window !== 'undefined') {
-      console.log('[Live2D][render] skipped: FUWARI_LIVE2D_ENABLE is false')
-    }
     return null
   }
   return (
@@ -700,17 +633,19 @@ const Live2DWidget = () => {
         #theme-fuwari .l2d-widget-root {
           right: var(--l2d-right, 1rem);
           bottom: var(--l2d-bottom, 1rem);
-          width: var(--l2d-w, 960px);
-          height: var(--l2d-h, 540px);
+          /* 取消了硬编码的宽高度，完全由 JS 计算出的变量驱动 */
+          width: var(--l2d-w);
+          height: var(--l2d-h);
         }
         #theme-fuwari .l2d-canvas-wrap {
-          width: var(--l2d-w, 960px);
-          height: var(--l2d-h, 540px);
+          width: var(--l2d-w);
+          height: var(--l2d-h);
+          max-width: 90vw;
+          max-height: 90vh;
           overflow: hidden;
           border-radius: 12px;
           background: transparent;
           cursor: pointer;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
         #theme-fuwari .l2d-canvas-wrap canvas {
           width: 100% !important;
@@ -796,6 +731,8 @@ const Live2DWidget = () => {
         className='l2d-canvas-wrap'
         ref={canvasContainerRef}
         onClick={handleToggle}
+        /* ★ 核心：必须提供一个明确的默认内联高度给容器作为计算起点 */
+        style={{ height: '480px' }}
       />
 
       {panelOpen && (
