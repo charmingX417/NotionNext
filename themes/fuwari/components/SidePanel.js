@@ -4,12 +4,13 @@ import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
 import AdCard from './AdCard'
 import AnalyticsCard from './AnalyticsCard'
-import Announcement from './Announcement'
 import ContactCard from './ContactCard'
 import CONFIG from '../config'
 import PluginCard from './PluginCard'
 import SocialButton from './SocialButton'
 import Toc from './Toc'
+import HitokotoCard from './HitokotoCard'
+import WeatherFlipCard from './WeatherFlipCard'
 
 const SidePanel = props => {
   const {
@@ -56,6 +57,10 @@ const SidePanel = props => {
         </div>
       </section>
 
+      <HitokotoCard />
+
+      <WeatherFlipCard />
+
       {showToc && (
         <section className='fuwari-card p-4'>
           <h3 className='text-sm font-semibold mb-3 px-3 tracking-wide uppercase text-[var(--fuwari-muted)]'>
@@ -65,11 +70,6 @@ const SidePanel = props => {
         </section>
       )}
 
-      {siteConfig('FUWARI_WIDGET_NOTICE', true, CONFIG) &&
-        notice &&
-        Object.keys(notice).length > 0 && (
-          <Announcement post={notice} title={locale?.COMMON?.ANNOUNCEMENT || '公告'} className='p-5' />
-      )}
 
       {siteConfig('FUWARI_WIDGET_LATEST_POSTS', true, CONFIG) && latestPosts.length > 0 && (
         <section className='fuwari-card p-5'>
