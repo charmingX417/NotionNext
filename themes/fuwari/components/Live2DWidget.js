@@ -45,9 +45,6 @@ const Live2DWidget = () => {
     })
     if (!enabled) return
 
-    // 始终可见（不再绑定滚动）。可选：滚到底时收起。
-    setVisible(true)
-
     // 页面进入即开始加载脚本与模型（无需点击）
     loadScriptsAndInit()
 
@@ -608,33 +605,30 @@ const Live2DWidget = () => {
     }
     return null
   }
-  if (!visible) return null
-
-  console.log('[Live2D][render] rendering widget', { model: ONLY_MODEL })
-
   return (
-    <div ref={containerRef} className='fixed z-40' style={{
-      right: '1.05rem',
-      bottom: '5.8rem',
-      width: '160px',
-      height: '90px'
-    }}>
+    <div ref={containerRef} className='fixed z-40 l2d-widget-root'>
       <style jsx global>{`
-        .l2d-canvas-wrap {
-          width: 160px;
-          height: 90px;
+        #theme-fuwari .l2d-widget-root {
+          right: var(--l2d-right, 1rem);
+          bottom: var(--l2d-bottom, 1rem);
+          width: var(--l2d-w, 960px);
+          height: var(--l2d-h, 540px);
+        }
+        #theme-fuwari .l2d-canvas-wrap {
+          width: var(--l2d-w, 960px);
+          height: var(--l2d-h, 540px);
           overflow: hidden;
           border-radius: 12px;
           background: transparent;
           cursor: pointer;
           box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
-        .l2d-canvas-wrap canvas {
+        #theme-fuwari .l2d-canvas-wrap canvas {
           width: 100% !important;
           height: 100% !important;
           border-radius: 12px;
         }
-        .l2d-panel {
+        #theme-fuwari .l2d-panel {
           position: absolute;
           bottom: 0;
           right: 0;
@@ -645,7 +639,7 @@ const Live2DWidget = () => {
           box-shadow: 0 12px 40px rgba(0,0,0,0.12);
           overflow: hidden;
         }
-        .l2d-panel-header {
+        #theme-fuwari .l2d-panel-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -653,7 +647,7 @@ const Live2DWidget = () => {
           border-bottom: 1px solid var(--fuwari-border, #e9e8df);
           background: color-mix(in oklab, var(--fuwari-primary, #b8a320) 6%, var(--fuwari-surface, #fff));
         }
-        .l2d-panel-title {
+        #theme-fuwari .l2d-panel-title {
           font-size: 12px;
           font-weight: 700;
           color: var(--fuwari-primary, #b8a320);
@@ -662,19 +656,19 @@ const Live2DWidget = () => {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .l2d-panel-body {
+        #theme-fuwari .l2d-panel-body {
           padding: 8px;
           max-height: 280px;
           overflow-y: auto;
         }
-        .l2d-panel-body::-webkit-scrollbar {
+        #theme-fuwari .l2d-panel-body::-webkit-scrollbar {
           width: 4px;
         }
-        .l2d-panel-body::-webkit-scrollbar-thumb {
+        #theme-fuwari .l2d-panel-body::-webkit-scrollbar-thumb {
           background: var(--fuwari-border, #e9e8df);
           border-radius: 4px;
         }
-        .l2d-section-label {
+        #theme-fuwari .l2d-section-label {
           font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.08em;
@@ -682,13 +676,13 @@ const Live2DWidget = () => {
           color: var(--fuwari-muted, #72767d);
           padding: 4px 4px 6px;
         }
-        .l2d-motion-grid {
+        #theme-fuwari .l2d-motion-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 4px;
           padding: 4px;
         }
-        .l2d-motion-btn {
+        #theme-fuwari .l2d-motion-btn {
           padding: 5px 4px;
           font-size: 10px;
           color: var(--fuwari-muted, #72767d);
@@ -702,7 +696,7 @@ const Live2DWidget = () => {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .l2d-motion-btn:hover {
+        #theme-fuwari .l2d-motion-btn:hover {
           background: color-mix(in oklab, var(--fuwari-primary, #b8a320) 8%, var(--fuwari-bg, #f3f4f8));
           color: var(--fuwari-primary, #b8a320);
           border-color: color-mix(in oklab, var(--fuwari-primary, #b8a320) 30%, transparent);

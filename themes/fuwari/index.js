@@ -37,6 +37,7 @@ const AlgoliaSearchModal = dynamic(
 )
 const Lenis = dynamic(() => import('@/components/Lenis'), { ssr: false })
 const CursorDot = dynamic(() => import('@/components/CursorDot'), { ssr: false })
+const Live2DWidget = dynamic(() => import('./components/Live2DWidget'), { ssr: false })
 const getLocale = () => generateLocaleDict(siteConfig('LANG', 'zh-CN'))
 
 const LayoutBase = props => {
@@ -80,6 +81,7 @@ const LayoutBase = props => {
       </main>
       <Footer />
       <RightFloatArea post={props.post} />
+      <Live2DWidget />
       {siteConfig('FUWARI_EFFECT_LENIS', false, CONFIG) && <Lenis />}
       {siteConfig('FUWARI_EFFECT_CURSOR_DOT', false, CONFIG) && <CursorDot />}
     </div>
