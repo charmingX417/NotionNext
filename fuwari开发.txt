@@ -164,6 +164,74 @@ CSS/* 2. 外部屏幕位置：调整整个画布在网页中的位置 (CSS <styl
   --l2d-right: 2rem;  /* 距离屏幕右侧 2rem */
   --l2d-bottom: 0px;  /* 紧贴屏幕底部 */
   /* ⚠️ 宽度和高度已被 JS 自动接管，禁止在此处手写！ */
-  width: var(--l2d-w); 
+  width: var(--l2d-w);
   height: var(--l2d-h);
 }
+
+---
+
+## 多模型 + 午夜自动切换
+
+### 当前使用模型
+
+| 模型 | 文件夹路径 | 用途 |
+|------|-----------|------|
+| 拉菲（新年兔） | `live2d_3/model/Azue Lane(JP)/lafei_4` | 00:00 ~ 23:59 |
+| 独角兽（游乐园约会） | `live2d_3/model/Azue Lane(JP)/dujiaoshou_4` | 兜底 |
+
+### 配置位置
+
+`themes/fuwari/components/Live2DWidget.js` 文件顶部 `MODEL_SCHEDULES` 数组。
+
+### 文件清理指南
+
+**⚠️ 警告：以下目录结构分为两套，互不通用，清理时务必区分清楚。**
+
+```
+public/live2d-master/
+├── live2d_3/          ← 【正在使用】Cubism 4 模型（当前组件加载路径）
+│   ├── js/
+│   │   ├── pixi.min.js                    ← ⚠️ 不能删！PIXI 渲染引擎
+│   │   ├── live2dcubismcore.min.js        ← ⚠️ 不能删！Live2D 核心库
+│   │   ├── live2dcubismframework.js       ← ⚠️ 不能删！Framework 层
+│   │   ├── live2dcubismpixi.js            ← ⚠️ 不能删！Pixi 集成
+│   │   └── jquery.min.js                  ← ⚠️ 不能删！
+│   ├── css/
+│   ├── model/                              ← 【可清理】只保留正在使用的模型文件夹
+│   │   └── Azue Lane(JP)/
+│   │       ├── lafei_4/                   ← ⚠️ 不能删！
+│   │       ├── dujiaoshou_4/               ← ⚠️ 不能删！
+│   │       └── ...（其他模型全部可删）
+│   └── index.html
+├── model/              ← 【未使用】旧版 Cubism 2/3 模型（约 2000+ 文件），全部可删
+├── js/                 ← 【未使用】旧版 JS，全部可删
+├── README.md           ← 可删
+└── index.html          ← 可删
+```
+
+**绝对不能动的文件（删了 Live2D 直接崩溃）：**
+
+```
+live2d_3/js/pixi.min.js
+live2d_3/js/live2dcubismcore.min.js
+live2d_3/js/live2dcubismframework.js
+live2d_3/js/live2dcubismpixi.js
+live2d_3/js/jquery.min.js
+live2d_3/model/Azue Lane(JP)/lafei_4/        ← 拉菲模型本体
+live2d_3/model/Azue Lane(JP)/dujiaoshou_4/   ← 独角兽模型本体
+```
+
+**可以放心删除的内容（释放约 90MB+）：**
+
+- `live2d-master/model/` 整个旧版模型目录（约 2000 个文件）
+- `live2d-master/js/` 旧版 JS（`live2d.js` / `LAppDefine.js` / `l2d.js` 等）
+- `live2d-master/live2d_3/model/Azue Lane(JP)/` 下除 `lafei_4` 和 `dujiaoshou_4` 以外的所有模型文件夹
+- `live2d-master/README.md` / `live2d-master/index.html` / `live2d_3/index.html`
+
+**清理后 `live2d_3/model/Azue Lane(JP)/` 应只保留：**
+
+```
+Azue Lane(JP)/
+├── lafei_4/          ← 拉菲
+└── dujiaoshou_4/     ← 独角兽
+```
