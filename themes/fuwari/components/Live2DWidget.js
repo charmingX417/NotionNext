@@ -13,6 +13,13 @@ const MODEL_BASE = `${CDN_BASE}/model`
 const ONLY_MODEL = 'Azue Lane(JP)/lafei_4'
 const ONLY_MODEL_NAME = 'Laffey (New Year Rabbit)'
 
+// 模型位置偏移比例（相对容器宽高）。
+// 0 = 居中；正值：X 偏右 / Y 偏下；负值：X 偏左 / Y 偏上
+const MODEL_OFFSET = {
+  x: 0.3, // 水平：0 = 居中；0.2 = 中心移到 70% 宽度处；-0.2 = 偏左
+  y: 0.15    // 垂直：0 = 居中；0.2 = 中心移到 70% 高度处（偏下）；-0.2 = 偏上
+}
+
 const Live2DWidget = () => {
   const containerRef = useRef(null)
   const canvasContainerRef = useRef(null)
@@ -336,27 +343,32 @@ const Live2DWidget = () => {
           this.setupEvents(container)
           this.l2d.load(modelName, this)
 
-          this.onResize = () => {
-            const w = window.innerWidth
-            const h = (w / 16.0) * 9.0
-            this.app.view.style.width = w + 'px'
-            this.app.view.style.height = h + 'px'
-            this.app.renderer.resize(w, h)
-
-            if (this.model) {
-              this.model.position = new PIXI.Point(w * 0.5, h * 0.5)
-              this.model.scale = new PIXI.Point(this.model.position.x * 0.06, this.model.position.x * 0.06)
-              if (this.model.masks) {
-                this.model.masks.resize(this.app.view.width, this.app.view.height)
-              }
+          // 用 ResizeObserver 监听容器尺寸变化，实时更新 canvas 分辨率与模型位置
+          this.resizeObserver = new ResizeObserver((entries) => {
+            const entry = entries[0]
+            if (!entry || !this.model) return
+            const { width, height } = entry.contentRect
+            if (width === 0 || height === 0) return
+            this.app.view.style.width = width + 'px'
+            this.app.view.style.height = height + 'px'
+            this.app.renderer.resize(width, height)
+            // 位置：相对容器中心，按 MODEL_OFFSET.x / MODEL_OFFSET.y 偏移
+            this.model.position = new PIXI.Point(
+              width * (0.5 + MODEL_OFFSET.x),
+              height * (0.5 + MODEL_OFFSET.y)
+            )
+            const scale = this.calculateScale(width, height, this.model)
+            this.model.scale = new PIXI.Point(scale, scale)
+            if (this.model.masks) {
+              this.model.masks.resize(width, height)
             }
-          }
-          window.addEventListener('resize', this.onResize)
+          })
+          this.resizeObserver.observe(container)
 
           const checkModel = setInterval(() => {
             if (this.model) {
               clearInterval(checkModel)
-              console.log('[Live2D][viewer.init] model attached, resolving init promise')
+              console.log('[Live2D][init] model attached, resolving init promise')
               resolve()
             }
           }, 200)
@@ -393,9 +405,11 @@ const Live2DWidget = () => {
             } else if (self.isHit('TouchSpecial', e.offsetX, e.offsetY)) {
               self.startAnimation('touch_special', 'base')
             } else {
-              const bodyMotions = ['touch_body', 'main_1', 'main_2', 'main_3']
-              let currentMotion = bodyMotions[Math.floor(Math.random() * bodyMotions.length)]
-              self.startAnimation(currentMotion, 'base')
+              // 从模型已加载的全部 motions 中随机选一个播放
+              const allMotions = []
+              self.model.motions.forEach(function (v, k) { allMotions.push(k) })
+              const picked = allMotions[Math.floor(Math.random() * allMotions.length)]
+              self.startAnimation(picked, 'base')
             }
           }
           self.isClick = false
@@ -425,10 +439,11 @@ const Live2DWidget = () => {
         const rect = this.container
           ? this.container.getBoundingClientRect()
           : { width: 0, height: 0 }
+        this.model.position = new PIXI.Point(
+          rect.width * (0.5 + MODEL_OFFSET.x),
+          rect.height * (0.5 + MODEL_OFFSET.y)
+        )
         const scale = this.calculateScale(rect.width, rect.height, this.model)
-        const cx = rect.width * 0.5
-        const cy = rect.height * 0.5
-        this.model.position = new PIXI.Point(cx, cy)
         this.model.scale = new PIXI.Point(scale, scale)
         console.log('[Live2D][changeCanvas] model placed', {
           x: this.model.position.x,
@@ -582,15 +597,16 @@ const Live2DWidget = () => {
   }
 
   const handleToggle = () => {
-    console.log('[Live2D][toggle] click', {
-      initialized: stateRef.current.initialized,
-      panelOpen,
-      hasContainer: !!canvasContainerRef.current
-    })
-    if (!stateRef.current.initialized) {
-      loadScriptsAndInit()
-    }
-    setPanelOpen(!panelOpen)
+    //关闭点击模型弹出选项面板
+    // console.log('[Live2D][toggle] click', {
+    //   initialized: stateRef.current.initialized,
+    //   panelOpen,
+    //   hasContainer: !!canvasContainerRef.current
+    // })
+    // if (!stateRef.current.initialized) {
+    //   loadScriptsAndInit()
+    // }
+    // setPanelOpen(!panelOpen)
   }
 
   const handleMotion = (motionId) => {
