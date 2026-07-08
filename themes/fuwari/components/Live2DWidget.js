@@ -8,27 +8,83 @@ import CONFIG from '../config'
 const CDN_BASE = '/live2d-master/live2d_3'
 const MODEL_BASE = `${CDN_BASE}/model`
 
-const ONLY_MODEL = 'Azue Lane(JP)/lafei_4'
-const ONLY_MODEL_NAME = 'Laffey (New Year Rabbit)'
+// ============================================================
+// 多模型时段配置
+// ============================================================
+// schedule: 可选，格式 'HH:MM'（24小时制）。留空表示默认（兜底）。
+// 顺序按优先级排列，匹配到第一个即使用该模型。
 
-// 模型展示配置（用户主动配置，不属于模型缺失数据的后备）
+const MODEL_SCHEDULES = [
+  {
+    path: 'Azue Lane(JP)/lafei_4',
+    name: '拉菲（新年兔）',
+    schedule: '00:00' // 午夜~23:59
+  },
+  {
+    path: 'Azue Lane(JP)/dujiaoshou_4',
+    name: '独角兽（游乐园约会）',
+    schedule: null // 无时段 = 默认兜底
+  }
+]
+
+// ============================================================
+// 旧版兼容常量（后续逻辑已不再使用，仅保留防止报错）
+// ============================================================
+const ONLY_MODEL = MODEL_SCHEDULES[0].path
+const ONLY_MODEL_NAME = MODEL_SCHEDULES[0].name
+
+// ============================================================
+// 各模型独立展示配置（key = model path，与 MODEL_SCHEDULES 中一致）
+// ============================================================
 const MODEL_CONFIG = {
-  zoom: 1.0, 
-  offsetX: 0, 
-  offsetY: 0  
+  default: {
+    zoom: 1.0,
+    offsetX: 0,
+    offsetY: 0
+  }
 }
 
-// 个性化动作触发配置
+// ============================================================
+// 动作规则（所有模型共用这套行为配置，可按需拆分）
+// ============================================================
 const MOTION_RULES = {
-  onFirstLoad: ['login', 'home'],                           
-  onReturn: ['complete', 'mail', 'mission'],                
-  idleTimeoutMs: 60 * 1000,                                 
-  idleMotions: ['mail', 'main_1', 'main_2', 'main_3'],      
+  onFirstLoad: ['login', 'home'],
+  onReturn: ['complete', 'mail', 'mission'],
+  idleTimeoutMs: 60 * 1000,
+  idleMotions: ['mail', 'main_1', 'main_2', 'main_3'],
   onBodyClickMotions: [
     'mail', 'main_1', 'main_2', 'main_3',
     'complete', 'mission', 'touch_body'
   ],
   touchSpecialMotion: 'touch_special'
+}
+
+// ============================================================
+// 时段匹配工具
+// ============================================================
+const getCurrentModelConfig = () => {
+  const now = new Date()
+  const currentHour = now.getHours()
+  const currentMinute = now.getMinutes()
+  const currentTime = currentHour * 60 + currentMinute
+
+  for (const entry of MODEL_SCHEDULES) {
+    if (!entry.schedule) continue
+    const [h, m] = entry.schedule.split(':').map(Number)
+    const scheduleTime = h * 60 + m
+    if (currentTime >= scheduleTime) {
+      return entry
+    }
+  }
+  // 兜底：找第一个没有 schedule 的
+  return MODEL_SCHEDULES.find(e => !e.schedule) || MODEL_SCHEDULES[0]
+}
+
+const getNextMidnightMs = () => {
+  const now = new Date()
+  const midnight = new Date(now)
+  midnight.setHours(24, 0, 0, 0)
+  return midnight.getTime() - now.getTime()
 }
 
 const Live2DWidget = () => {
@@ -40,6 +96,7 @@ const Live2DWidget = () => {
     app: null,
     model: null,
     models: {},
+    currentModelPath: null,
     isDragging: false,
     dragStartX: 0,
     dragStartY: 0,
@@ -51,7 +108,9 @@ const Live2DWidget = () => {
   const [visible, setVisible] = useState(true)
   const [panelOpen, setPanelOpen] = useState(false)
   const [motions, setMotions] = useState([])
-  const idleTimerRef = useRef(null)             
+  const [currentModelInfo, setCurrentModelInfo] = useState(() => getCurrentModelConfig())
+  const idleTimerRef = useRef(null)
+  const midnightTimerRef = useRef(null)             
   const hasTriggeredFirstLoadRef = useRef(false) 
   const lastInteractionRef = useRef(Date.now())  
 
@@ -93,10 +152,14 @@ const Live2DWidget = () => {
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
 
+    // 启动午夜定时切换
+    scheduleMidnightSwitch()
+
     return () => {
       window.removeEventListener('scroll', onScroll)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+      if (midnightTimerRef.current) clearTimeout(midnightTimerRef.current)
     }
   }, [])
 
@@ -110,10 +173,47 @@ const Live2DWidget = () => {
     stateRef.current.l2d = viewer.l2d
 
     try {
-      await viewer.init(canvasContainerRef.current, ONLY_MODEL)
+      const { path: initialPath } = getCurrentModelConfig()
+      await viewer.init(canvasContainerRef.current, initialPath)
+
+      // 预加载其他模型到内存缓存
+      preloadModels(initialPath)
     } catch (e) {
       console.error('[Live2D] Init failed:', e)
     }
+  }
+
+  const preloadModels = (skipPath) => {
+    if (!stateRef.current.l2d) return
+    MODEL_SCHEDULES.forEach(({ path }) => {
+      if (path !== skipPath) {
+        // 触发加载但不切换（缓存到 self.models）
+        stateRef.current.l2d.load(path, {
+          changeCanvas: () => {}
+        })
+      }
+    })
+  }
+
+  const scheduleMidnightSwitch = () => {
+    if (midnightTimerRef.current) clearTimeout(midnightTimerRef.current)
+    const delay = getNextMidnightMs()
+    console.log(`[Live2D] Next midnight switch in ${Math.round(delay / 1000 / 60)} minutes`)
+    midnightTimerRef.current = setTimeout(() => {
+      const newModel = getCurrentModelConfig()
+      switchToModel(newModel)
+      // 重新调度下一个午夜
+      scheduleMidnightSwitch()
+    }, delay)
+  }
+
+  const switchToModel = (modelEntry) => {
+    const { path, name } = modelEntry
+    const viewer = stateRef.current.viewer
+    if (!viewer) return
+    setCurrentModelInfo(modelEntry)
+    // viewer.l2d.load 会检查 this.models[name]，已缓存则直接切换
+    viewer.l2d.load(path, viewer)
   }
 
   const createL2DClass = () => {
@@ -142,7 +242,7 @@ const Live2DWidget = () => {
       load(name, viewerRef) {
         const self = this
         if (this.models[name]) {
-          viewerRef.changeCanvas(this.models[name])
+          viewerRef.changeCanvas(this.models[name], name)
           return
         }
 
@@ -240,7 +340,7 @@ const Live2DWidget = () => {
             let model = window.LIVE2DCUBISMPIXI.Model._create(coreModel, textures, animator, physicsRig, null, groups)
             model.motions = motionsMap
             self.models[name] = model
-            viewerRef.changeCanvas(model)
+            viewerRef.changeCanvas(model, name)
           })
         })
       }
@@ -327,8 +427,9 @@ const Live2DWidget = () => {
 
         // 计算带 PPU 的最终物理矩阵
         const baseScale = containerH / nativeSize.height
-        const finalScale = baseScale * nativeSize.ppu * MODEL_CONFIG.zoom
-        
+        const modelCfg = MODEL_CONFIG[stateRef.current.currentModelPath] || MODEL_CONFIG.default
+        const finalScale = baseScale * nativeSize.ppu * modelCfg.zoom
+
         // 注意：如果拉菲出现倒立现象，请将下方代码改为 new PIXI.Point(finalScale, -finalScale)
         this.model.scale = new PIXI.Point(finalScale, finalScale)
 
@@ -336,8 +437,8 @@ const Live2DWidget = () => {
         const centerX = containerW / 2
         const centerY = containerH / 2
 
-        const posX = centerX + (containerW * MODEL_CONFIG.offsetX)
-        const posY = centerY + (containerH * MODEL_CONFIG.offsetY)
+        const posX = centerX + (containerW * modelCfg.offsetX)
+        const posY = centerY + (containerH * modelCfg.offsetY)
 
         this.model.position = new PIXI.Point(posX, posY)
 
@@ -445,12 +546,17 @@ const Live2DWidget = () => {
         })
       }
 
-      changeCanvas(model) {
+      changeCanvas(model, modelPath) {
         const { PIXI } = window
         this.app.stage.removeChildren()
 
         this.model = model
         if (!this.model) return
+
+        // 记录当前模型路径（用于 syncRendererSize 匹配独立配置）
+        if (modelPath) {
+          stateRef.current.currentModelPath = modelPath
+        }
 
         this.model.update = this.onUpdate
         this.model.animator.addLayer('base', window.LIVE2DCUBISMFRAMEWORK.BuiltinAnimationBlenders.OVERRIDE, 1)
@@ -738,7 +844,7 @@ const Live2DWidget = () => {
       {panelOpen && (
         <div className='l2d-panel'>
           <div className='l2d-panel-header'>
-            <span className='l2d-panel-title'>{ONLY_MODEL_NAME}</span>
+            <span className='l2d-panel-title'>{currentModelInfo.name}</span>
             <button
               className='fuwari-tool-btn'
               style={{ width: '1.5rem', height: '1.5rem', fontSize: '10px' }}
