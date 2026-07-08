@@ -4,7 +4,6 @@ import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
 import AdCard from './AdCard'
 import AnalyticsCard from './AnalyticsCard'
-import ContactCard from './ContactCard'
 import CONFIG from '../config'
 import PluginCard from './PluginCard'
 import SocialButton from './SocialButton'
@@ -125,7 +124,6 @@ const SidePanel = props => {
         </section>
       )}
 
-      <ContactCard />
       <AnalyticsCard
         postCount={postCount}
         categoryOptions={categoryOptions}
