@@ -4,6 +4,7 @@ import { useGlobal } from '@/lib/global'
 import CONFIG from '../config'
 import { isCommentServiceConfigured } from '../utils/commentEnabled'
 import Toc from './Toc'
+import Live2DWidget from './Live2DWidget'
 
 const RightFloatArea = ({ post }) => {
   const [visible, setVisible] = useState(false)
@@ -69,6 +70,7 @@ const RightFloatArea = ({ post }) => {
           </button>
         )}
       </div>
+      <Live2DWidget />
     </>
   )
 }

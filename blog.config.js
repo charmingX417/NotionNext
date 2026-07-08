@@ -6,7 +6,7 @@ const BLOG = {
   NOTION_PAGE_ID:
     process.env.NOTION_PAGE_ID ||
     '02ab3b8678004aa69e9e415905ef32a5,en:7c1d570661754c8fbc568e00a01fd70e',
-  THEME: process.env.NEXT_PUBLIC_THEME || 'simple', // 当前主题，在themes文件夹下可找到所有支持的主题；主题名称就是文件夹名，例如 claude,endspace,example,fukasawa,fuwari,gitbook,heo,hexo,landing,matery,medium,next,nobelium,plog,simple
+  THEME: process.env.NEXT_PUBLIC_THEME || 'fuwari', // 当前主题，在themes文件夹下可找到所有支持的主题；主题名称就是文件夹名，例如 claude,endspace,example,fukasawa,fuwari,gitbook,heo,hexo,landing,matery,medium,next,nobelium,plog,simple
   LANG: process.env.NEXT_PUBLIC_LANG || 'zh-CN', // e.g 'zh-CN','en-US'  see /lib/lang.js for more.
   SINCE: process.env.NEXT_PUBLIC_SINCE || 2021, // e.g if leave this empty, current year will be used.
 
@@ -81,7 +81,15 @@ const BLOG = {
     process.env.NEXT_PUBLIC_GREETING_WORDS_BACK_SPEED || 100,
 
   // uuid重定向至 slug
-  UUID_REDIRECT: process.env.UUID_REDIRECT || false
+  UUID_REDIRECT: process.env.UUID_REDIRECT || false,
+
+  // ---------------------------------------------------------------------------
+  // Fuwari 主题 · Live2D 看板娘（Cubism 3）
+  // ---------------------------------------------------------------------------
+  FUWARI_LIVE2D_ENABLE: process.env.NEXT_PUBLIC_FUWARI_LIVE2D_ENABLE || true,
+  FUWARI_LIVE2D_DEFAULT_MODEL:
+    process.env.NEXT_PUBLIC_FUWARI_LIVE2D_DEFAULT_MODEL ||
+    'Azue Lane(JP)/lafei_4'
 }
 
 module.exports = BLOG

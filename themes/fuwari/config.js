@@ -180,7 +180,21 @@ const CONFIG = {
   /** 文末评论区（需在 `blog.config.js` 配置任一种评论服务，如 COMMENT_GISCUS_REPO / COMMENT_TWIKOO_ENV_ID 等，否则不渲染） */
   FUWARI_ARTICLE_COMMENT: true,
   /** 文末上一篇 / 下一篇 */
-  FUWARI_ARTICLE_ADJACENT: true
+  FUWARI_ARTICLE_ADJACENT: true,
+
+  // ---------------------------------------------------------------------------
+  // Live2D 看板娘（Cubism 3）
+  // 优先读取 NEXT_PUBLIC_FUWARI_LIVE2D_ENABLE / _DEFAULT_MODEL 环境变量，缺省时使用下方默认值
+  // ---------------------------------------------------------------------------
+  /** 是否启用 Live2D 看板娘 */
+  FUWARI_LIVE2D_ENABLE:
+    typeof process !== 'undefined' &&
+    process.env &&
+    process.env.NEXT_PUBLIC_FUWARI_LIVE2D_ENABLE !== undefined
+      ? process.env.NEXT_PUBLIC_FUWARI_LIVE2D_ENABLE === 'true'
+      : true,
+  /** 默认角色模型（对应 model 目录下的子目录名） */
+  FUWARI_LIVE2D_DEFAULT_MODEL: 'Azue Lane(JP)/lafei_4'
 }
 
 export default CONFIG
